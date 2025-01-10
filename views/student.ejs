@@ -9,18 +9,22 @@
 <body>
 
 <div class="container">
+    <p>Current user: <%= studentName %></p>
+
     <div class="columns">
         <div class="column" id="selectedMentors">
             <h2>Selected Mentors</h2>
             <ul id="selectedList" class="list">
-                <!-- Initially empty, but will be populated by drag-and-drop -->
+                <% selectedMentors.forEach(function(mentor) { %>
+                    <li><%= mentor %></li>
+                <% }); %>
             </ul>
         </div>
 
         <div class="column" id="allMentors">
             <h2>All Mentors</h2>
             <ul id="allList" class="list">
-                <% mentors.forEach(function(mentor) { %>
+                <% remainingMentors.forEach(function(mentor) { %>
                     <li><%= mentor %></li>
                 <% }); %>
             </ul>
@@ -31,7 +35,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
-<script src="/js/script.js"></script>
+<script src="/js/student.js"></script>
 
 </body>
 </html>
