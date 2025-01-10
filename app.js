@@ -13,7 +13,15 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.get('/', (req, res) => {
-  res.render('index', { mentors: mentors });
+  res.render('index');
+});
+
+app.get('/student', (req, res) => {
+  res.render('student', { mentors: mentors });
+});
+
+app.get('/mentor', (req, res) => {
+  res.render('mentor');
 });
 
 app.listen(port, () => {

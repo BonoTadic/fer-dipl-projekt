@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentor Pairing</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="columns">
+        <div class="column" id="selectedMentors">
+            <h2>Selected Mentors</h2>
+            <ul id="selectedList" class="list">
+                <!-- Initially empty, but will be populated by drag-and-drop -->
+            </ul>
+        </div>
+
+        <div class="column" id="allMentors">
+            <h2>All Mentors</h2>
+            <ul id="allList" class="list">
+                <% mentors.forEach(function(mentor) { %>
+                    <li><%= mentor %></li>
+                <% }); %>
+            </ul>
+        </div>
+    </div>
+
+    <button id="saveBtn" disabled>Save Selected Mentors</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
+<script src="/js/script.js"></script>
+
+</body>
+</html>
