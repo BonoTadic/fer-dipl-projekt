@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentor Pairing</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            max-width: 1000px;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .columns {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .column {
+            width: 45%;
+            height: 400px;
+            overflow-y: auto;
+            background-color: #fafafa;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            box-sizing: border-box;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        #selectedMentors {
+            min-height: 8rem;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            color: #007BFF;
+        }
+
+        .list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .list li {
+            background-color: #fff;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: move;
+            font-size: 1.1em;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list li:active {
+            background-color: #f0f0f0;
+        }
+
+        button {
+            width: 200px;
+            padding: 15px;
+            margin-top: 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: block;
+            margin: 0 auto;
+        }
+
+        button:disabled {
+            background-color: #d6d6d6;
+            cursor: not-allowed;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .columns {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .column {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="columns">
+        <div class="column" id="selectedMentors">
+            <h2>Selected Mentors</h2>
+            <ul id="selectedList" class="list">
+                <!-- Initially empty, but will be populated by drag-and-drop -->
+            </ul>
+        </div>
+
+        <div class="column" id="allMentors">
+            <h2>All Mentors</h2>
+            <ul id="allList" class="list">
+                <% mentors.forEach(function(mentor) { %>
+                    <li><%= mentor %></li>
+                <% }); %>
+            </ul>
+        </div>
+    </div>
+
+    <button id="saveBtn" disabled>Save Selected Mentors</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
+<script>
+    const maxSelectedMentors = 10;
+    const selectedList = document.getElementById('selectedList');
+    const allList = document.getElementById('allList');
+    const saveBtn = document.getElementById('saveBtn');
+
+    new Sortable(allList, {
+        group: 'shared',
+        animation: 150,
+        onEnd(evt) {
+            if (selectedList.children.length > maxSelectedMentors) {
+                evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex]);
+                alert('You can only select up to ' + maxSelectedMentors + ' mentors.');
+            }
+            updateSaveBtnState();
+        }
+    });
+
+    new Sortable(selectedList, {
+        group: 'shared',
+        animation: 150,
+        onEnd(evt) {
+            if (selectedList.children.length > maxSelectedMentors) {
+                evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex]);
+                alert('You can only select up to ' + maxSelectedMentors + ' mentors.');
+            }
+            updateSaveBtnState();
+        }
+    });
+
+    function updateSaveBtnState() {
+        const selectedItems = selectedList.children;
+        saveBtn.disabled = selectedItems.length === 0;
+    }
+
+    // Handle Save button click
+    saveBtn.addEventListener('click', function() {
+        const selectedMentors = Array.from(selectedList.children).map(item => item.textContent);
+
+        // Create a text file content with selected mentors
+        const textContent = selectedMentors.join('\n');  // Each mentor in a new line
+
+        // Create a Blob object with the content (text file format)
+        const blob = new Blob([textContent], { type: 'text/plain' });
+
+        // Create a download link for the Blob
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'selected_mentors.txt';  // The name of the file
+
+        // Trigger the download by simulating a click
+        link.click();
+    });
+
+</script>
+
+</body>
+</html>
