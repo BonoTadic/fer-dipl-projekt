@@ -3,15 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mentor Mode</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <title>Mentor Page</title>
+    <link rel="stylesheet" href="/css/mentor.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
 </head>
 <body>
-
 <div class="container">
-    <h1>Mentor Mode</h1>
-    <p>This page will be developed in the future.</p>
+    <h1>Welcome, <%= mentorName %></h1>
+    <div class="student-list-container">
+        <h2>Students who selected you:</h2>
+        <ul id="student-list">
+            <% if (students.length === 0) { %>
+                <p class="empty-note">No students have selected you yet.</p>
+            <% } else { %>
+                <% students.forEach(student => { %>
+                    <li><%= student %></li>
+                <% }); %>
+            <% } %>
+        </ul>
+    </div>
+    <button id="save-button" <%= students.length === 0 ? 'disabled' : '' %>>Save List</button>
 </div>
-
+<script src="/js/mentor.js"></script>
 </body>
 </html>
