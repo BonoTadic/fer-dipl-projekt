@@ -9,14 +9,14 @@
 <body>
 
 <div class="container">
-    <h1>Current user: <%= studentName %></h1>
+    <h1>Current user: <%= id %></h1>
 
     <div class="columns">
         <div class="column" id="selectedMentors">
             <h2>Selected Mentors</h2>
             <ul id="selectedList" class="list">
                 <% selectedMentors.forEach(function(mentor) { %>
-                    <li><%= mentor %></li>
+                    <li><%= mentor.name %></li>
                 <% }); %>
             </ul>
         </div>
@@ -25,7 +25,7 @@
             <h2>All Mentors</h2>
             <ul id="allList" class="list">
                 <% remainingMentors.forEach(function(mentor) { %>
-                    <li><%= mentor %></li>
+                    <li><%= mentor.name %></li>
                 <% }); %>
             </ul>
         </div>

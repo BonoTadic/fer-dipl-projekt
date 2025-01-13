@@ -11,10 +11,10 @@
     <h2>Select your <%= role.charAt(0).toUpperCase() + role.slice(1) %></h2>
     <form action="/set-user" method="POST">
         <input type="hidden" name="role" value="<%= role %>">
-        <select name="name" required>
+        <select name="id" required>
             <option value="">Select a <%= role %></option>
             <% users.forEach(function(user) { %>
-                <option value="<%= user %>"><%= user %></option>
+                <option value="<%= user.id %>"><%= user.name %></option>
             <% }); %>
         </select>
         <button type="submit">Confirm</button>

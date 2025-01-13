@@ -15,7 +15,9 @@
     "express-session": "^1.18.1",
     "http-errors": "~1.6.3",
     "morgan": "~1.9.1",
-    "sortablejs": "^1.15.6"
+    "pg": "^8.13.1",
+    "sortablejs": "^1.15.6",
+    "www": "^0.0.0"
   },
   "main": "app.js",
   "keywords": [],

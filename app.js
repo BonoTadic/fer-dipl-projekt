@@ -7,6 +7,22 @@ const session = require('express-session');
 const app = express();
 const port = 3000;
 
+const { Client } = require('pg');
+const client = new Client({
+  user: 'postgres',
+  host: '172.17.176.1',
+  database: 'projekt',
+  password: 'Tomi1234',
+  port: 5432,  
+});
+
+client.connect(function(err) {
+  if (err) {
+    return console.error('could not connect to postgres', err);
+  }
+  console.log('connected to postgres');
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -18,7 +34,19 @@ app.use(session({
 }));
 
 const studentsFile = path.join(__dirname, 'data', 'repo', 'students.txt');
+const studentsTable = client.query('SELECT * FROM projekt.student', (err, res) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+});
 const mentorsFile = path.join(__dirname, 'data', 'repo', 'mentors.txt');
+const mentorsTable = client.query('SELECT * FROM projekt.profesor', (err, res) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+});
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -27,55 +55,95 @@ app.get('/', (req, res) => {
   res.render('index');
 });
 
-app.get('/select-user/:role', (req, res) => {
+app.get('/select-user/:role', async (req, res) => {
   const { role } = req.params;
   const file = role === 'student' ? studentsFile : mentorsFile;
 
-  fs.readFile(file, 'utf-8', (err, data) => {
+  /*fs.readFile(file, 'utf-8', (err, data) => {
     if (err) {
       return res.status(500).send('Error reading file');
     }
 
     const users = data.split('\n').filter(name => name.trim() !== '');
     res.render('select-user', { users, role });
+  });*/
+
+  let queryResults = [];
+  if (role === 'student') {
+    const result = await client.query('SELECT * FROM projekt.student');
+    queryResults = result.rows;
+  } else {
+    const result = await client.query('SELECT * FROM projekt.profesor');
+    queryResults = result.rows;
+  }
+
+  //map queryResults to users, id, name and surname
+  const users = queryResults.map(user => {
+    return {
+      id: user.id,
+      name: user.ime + ' ' + user.prezime
+    }
   });
+
+  res.render('select-user', { users, role });
+
 });
 
 app.post('/set-user', (req, res) => {
-  const { role, name } = req.body;
+  const { role, id } = req.body;
 
-  if (!role || !name) {
+  if (!role || !id) {
     return res.status(400).send('Missing data');
   }
 
-  req.session.user = { role, name };
+  req.session.user = { role, id };
   const redirectPage = role === 'student' ? '/student' : '/mentor';
+
+  console.log('User set:', req.session.user.id);
   res.redirect(redirectPage);
 });
 
-app.get('/student', (req, res) => {
+app.get('/student', async (req, res) => {
   const user = req.session.user;
-  if (!user || user.role !== 'student') {
+  if (!user.id || user.role !== 'student') {
     return res.status(403).send('Access denied');
   }
 
-  const studentName = user.name.trim();
-  const studentNumber = studentName.split(' ')[1].trim();
-  const studentFilePath = path.join(__dirname, 'data', 'picks', 'students', `student-${studentNumber}.txt`);
-
-  const mentorsFile = path.join(__dirname, 'data', 'repo', 'mentors.txt');
-  const mentors = fs.readFileSync(mentorsFile, 'utf-8').split('\n').map(mentor => mentor.trim()).filter(mentor => mentor !== '');
-
   let selectedMentors = [];
 
-  if (fs.existsSync(studentFilePath)) {
-    selectedMentors = fs.readFileSync(studentFilePath, 'utf-8').split('\n').map(mentor => mentor.trim()).filter(mentor => mentor !== '');
+  try {
+    // Fetch all mentors
+    const queryResults = await client.query('SELECT * FROM projekt.profesor');
+    const mentors = queryResults.rows.map(mentor => {
+      return {
+        id: mentor.id,
+        name: `${mentor.ime} ${mentor.prezime}`,
+      };
+    });
+
+    // Fetch mentors selected by the student
+    const queryResults2 = await client.query('SELECT * FROM projekt.get_mentors_by_student($1)', [user.id]);
+    
+    // Unpack rows properly
+    selectedMentors = queryResults2.rows.map(mentor => {
+      return {
+        id: mentor.profesor_id, // Ensure this matches the column names returned by your function
+        name: `${mentor.ime} ${mentor.prezime}`,
+      };
+    });
+
+    // Filter out selected mentors from the list of all mentors
+    const remainingMentors = mentors.filter(mentor =>
+      !selectedMentors.some(selected => selected.id === mentor.id)
+    );
+
+    res.render('student', { id: user.id, selectedMentors, remainingMentors });
+  } catch (error) {
+    console.error('Error fetching mentors:', error);
+    res.status(500).send('Internal Server Error');
   }
-
-  const remainingMentors = mentors.filter(mentor => !selectedMentors.includes(mentor));
-
-  res.render('student', { studentName, selectedMentors, remainingMentors });
 });
+
 
 app.get('/mentor', (req, res) => {
   const user = req.session.user;
