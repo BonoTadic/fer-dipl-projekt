@@ -33,36 +33,26 @@ function updateSaveBtnState() {
 }
 
 saveBtn.addEventListener('click', function() {
-    const selectedMentors = Array.from(selectedList.children).map(item => item.textContent.trim());
+    const selectedMentors = Array.from(selectedList.children).map((item, index) => {
+        return {
+            id: item.getAttribute('data-mentor-id'),
+            rank: index
+        };
+    });
 
-    fetch('/get-student-name')
-        .then(response => response.json())
-        .then(data => {
-            const studentName = data.studentName;
+    const studentId = document.body.getAttribute('data-student-id');
 
-            if (!studentName) {
-                alert('Student name is not available');
-                return;
-            }
-
-            fetch('/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ selectedMentors, studentName }),
-            })
-                .then(response => response.text())
-                .then(data => {
-                    alert(data);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while saving the file.');
-                });
-        })
-        .catch(error => {
-            console.error('Error fetching student name:', error);
-            alert('An error occurred while retrieving the student name.');
-        });
+    fetch('/student/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ selectedMentors, id: studentId }),
+    }).then(response => {
+        if (response.ok) {
+            alert('Student\'s preferences saved successfully!');
+        } else {
+            alert('Error saving new prefererence list.');
+        }
+    });
 });

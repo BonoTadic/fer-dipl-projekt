@@ -89,14 +89,23 @@ app.get('/select-user/:role', async (req, res) => {
 
 });
 
-app.post('/set-user', (req, res) => {
+app.post('/set-user', async (req, res) => {
   const { role, id } = req.body;
 
   if (!role || !id) {
     return res.status(400).send('Missing data');
   }
 
-  req.session.user = { role, id };
+  let name = '';
+  if (role === 'student') {
+    const result = await client.query('SELECT * FROM projekt.student WHERE id = $1', [id]);
+    name = result.rows[0].ime + ' ' + result.rows[0].prezime;
+  } else {
+    const result = await client.query('SELECT * FROM projekt.profesor WHERE id = $1', [id]);
+    name = result.rows[0].ime + ' ' + result.rows[0].prezime;
+  }
+
+  req.session.user = { role, id, name };
   const redirectPage = role === 'student' ? '/student' : '/mentor';
 
   console.log('User set:', req.session.user.id);
@@ -105,6 +114,7 @@ app.post('/set-user', (req, res) => {
 
 app.get('/student', async (req, res) => {
   const user = req.session.user;
+  console.log(user);
   if (!user.id || user.role !== 'student') {
     return res.status(403).send('Access denied');
   }
@@ -129,6 +139,7 @@ app.get('/student', async (req, res) => {
       return {
         id: mentor.profesor_id, // Ensure this matches the column names returned by your function
         name: `${mentor.ime} ${mentor.prezime}`,
+        rank: mentor.rank
       };
     });
 
@@ -137,7 +148,9 @@ app.get('/student', async (req, res) => {
       !selectedMentors.some(selected => selected.id === mentor.id)
     );
 
-    res.render('student', { id: user.id, selectedMentors, remainingMentors });
+    
+
+    res.render('student', { id: user.id, selectedMentors, remainingMentors, name: user.name });
   } catch (error) {
     console.error('Error fetching mentors:', error);
     res.status(500).send('Internal Server Error');
@@ -145,96 +158,91 @@ app.get('/student', async (req, res) => {
 });
 
 
-app.get('/mentor', (req, res) => {
+app.get('/mentor', async (req, res) => {
   const user = req.session.user;
-  if (!user || user.role !== 'mentor') {
+  if (!user.id || user.role !== 'mentor') {
     return res.status(403).send('Access denied');
   }
 
-  const mentorName = user.name.trim();
-  const studentsWhoSelected = [];
+  
+  let students = [];
+  try {
+    const queryResults = await client.query('SELECT * FROM projekt.get_students_by_mentor($1)', [user.id]);
 
-  const studentsDir = path.join(__dirname, 'data', 'picks', 'students');
-  fs.readdirSync(studentsDir).forEach((file) => {
-    const studentPicks = fs.readFileSync(path.join(studentsDir, file), 'utf-8').split('\n').map(m => m.trim());
-    if (studentPicks.includes(mentorName)) {
-      studentsWhoSelected.push(file.replace('.txt', '').replace('student-', 'Student '));
-    }
-  });
-
-  const mentorFilePath = path.join(__dirname, 'data', 'picks', 'mentors', `${mentorName}.txt`);
-  let savedStudents = [];
-  if (fs.existsSync(mentorFilePath)) {
-    savedStudents = fs.readFileSync(mentorFilePath, 'utf-8').split('\n').map(s => s.trim()).filter(s => s !== '');
+    students = queryResults.rows.map(student => {
+      return {
+        id: student.student_id,
+        name: `${student.ime} ${student.prezime}`,
+        rank: student.rank
+      };
+    });
+    console.log(students);
+    res.render('mentor', { id: user.id, students, name: user.name });
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    res.status(500).send('Internal Server Error');
   }
-
-  const unsavedStudents = studentsWhoSelected.filter(s => !savedStudents.includes(s));
-  const allStudents = [...savedStudents, ...unsavedStudents];
-
-  res.render('mentor', { mentorName, students: allStudents });
 });
 
 app.post('/mentor/save', (req, res) => {
-  const { students, mentorName } = req.body;
+  const { students, id } = req.body;
 
-  if (!students || !mentorName) {
+  if (!students || !id) {
     return res.status(400).send('Missing data');
   }
 
-  const cleanedMentorName = mentorName.trim();
-  const mentorNumber = cleanedMentorName.split(' ')[1];
-  const mentorFileName = `mentor-${mentorNumber}.txt`;
-  const mentorDir = path.join(__dirname, 'data', 'picks', 'mentors');
-  const filePath = path.join(mentorDir, mentorFileName);
-  const textContent = students.join('\n');
-
-  fs.mkdirSync(mentorDir, { recursive: true });
-
-  try {
-    fs.writeFileSync(filePath, textContent, 'utf-8');
-    res.send('Data saved successfully!');
-  } catch (err) {
-    console.error('Error writing file:', err);
-    res.status(500).send('Error saving file');
-  }
+  const mentorId = id;
+  students.forEach(student => {
+    const studentId = student.id;
+    const rank = student.rank;
+    try {
+      client.query('SELECT * FROM projekt.update_mentor_odabir($1, $2, $3)', [mentorId, studentId, rank]);
+    }
+    catch (error) {
+      console.error('Error saving ranks:', error);
+      res.status(500).send('Internal Server Error');
+    }
+  });
+  res.status(200).send('Data saved successfully!');
 });
 
-app.get('/get-student-name', (req, res) => {
-  if (req.session.user && req.session.user.role === 'student') {
-    return res.json({ studentName: req.session.user.name });
-  }
-  res.status(404).send('Student not found');
-});
+app.post('/student/save', async (req, res) => {
+  const { selectedMentors, id } = req.body;
 
-app.get('/get-mentor-name', (req, res) => {
-  if (req.session.user && req.session.user.role === 'mentor') {
-    return res.json({ mentorName: req.session.user.name });
-  }
-  res.status(404).send('Mentor not found');
-});
-
-app.post('/save', (req, res) => {
-  const { selectedMentors, studentName } = req.body;
-
-  if (!selectedMentors || !studentName) {
+  if (!selectedMentors || !id) {
     return res.status(400).send('Missing data');
   }
 
-  const cleanedStudentName = studentName.trim();
-  const studentNumber = cleanedStudentName.split(' ')[1];
-  const studentFileName = `student-${studentNumber}.txt`;
-  const studentDir = path.join(__dirname, 'data', 'picks', 'students');
-  const filePath = path.join(studentDir, studentFileName);
-  const textContent = selectedMentors.join('\n');
+  const studentId = id;
 
-  fs.mkdirSync(studentDir, { recursive: true });
+  
 
   try {
-    fs.writeFileSync(filePath, textContent, 'utf-8');
-    res.send('Data saved successfully!');
-  } catch (err) {
-    console.error('Error writing file:', err);
-    res.status(500).send('Error saving file');
+    // Fetch current mentors from the student_odabir table
+    const currentMentorsResult = await client.query('SELECT profesor_id FROM projekt.student_odabir WHERE student_id = $1', [studentId]);
+    const currentMentors = currentMentorsResult.rows.map(row => row.profesor_id);
+
+    // Find mentors to remove
+    const selectedMentorIds = selectedMentors.map(mentor => parseInt(mentor.id));
+    console.log(selectedMentorIds);
+    const mentorsToRemove = currentMentors.filter(mentorId => !selectedMentorIds.includes(mentorId));
+    console.log(mentorsToRemove);
+    // Remove mentors that are no longer selected
+    for (const mentorId of mentorsToRemove) {
+      await client.query('DELETE FROM projekt.student_odabir WHERE student_id = $1 AND profesor_id = $2', [studentId, mentorId]);
+    }
+
+    // Update or insert selected mentors
+    for (const mentor of selectedMentors) {
+      const mentorId = mentor.id;
+      const rank = mentor.rank;
+      await client.query('SELECT * FROM projekt.update_student_odabir($1, $2, $3)', [studentId, mentorId, rank]);
+    }
+
+    res.status(200).send('Data saved successfully!');
+  } catch (error) {
+    console.error('Error saving ranks:', error);
+    res.status(500).send('Internal Server Error');
   }
 });
 

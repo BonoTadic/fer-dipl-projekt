@@ -4,8 +4,6 @@ select i, 'Mjesto ' || i, 10000 + i
 from generate_series(1, 50) as i;
 
 
-select * from projekt.student
-
 -- Insert random rows into student
 insert into projekt.student (ime, prezime, datum_rodjenja, mjesto_rodjenja_pbr, adresa, broj_telefona, email, spol, jmbag)
 select 
@@ -73,33 +71,32 @@ end $$;
 select * from projekt.student_odabir
 
 
--- Insert rows into mentor_odabir with proper ranking and priority set to false
+-- Populate mentor_odabir with adjusted ranks based on student_odabir
 do $$
 declare
     mentor_id int;
-    student_ids int[];
-    student_id int;  -- Declare the variable for use in FOREACH
-    i int := 0;
+    student_rank_rows record;
+    student_rank int;
 begin
+    -- Loop through each mentor
     for mentor_id in select id from projekt.profesor loop
-        -- Randomly select students for the mentor (up to 10 students)
-        student_ids := array(
-            select id from projekt.student order by random() limit (random() * 10)::int + 1
-        );
-
-        -- Assign ranks starting at 0, and set priority to false
-        i := 0;
-        foreach student_id in array student_ids loop
-            begin
-                insert into projekt.mentor_odabir (student_id, profesor_id, rank, prioritet)
-                values (student_id, mentor_id, i, false);
-                i := i + 1;
-            exception when others then
-                -- Skip if there's a conflict (e.g., unique constraint or trigger)
-                continue;
-            end;
+        -- Retrieve all students who ranked this mentor, ordered by their rank in student_odabir
+        student_rank := 0; -- Reset rank for this mentor
+        for student_rank_rows in
+            select student_id, rank
+            from projekt.student_odabir
+            where profesor_id = mentor_id
+            order by rank asc -- Students who ranked mentor higher are processed first
+        loop
+            -- Insert into mentor_odabir with adjusted rank
+            insert into projekt.mentor_odabir (student_id, profesor_id, rank, prioritet)
+            values (student_rank_rows.student_id, mentor_id, student_rank, false);
+            
+            -- Increment the mentor's rank for the next student
+            student_rank := student_rank + 1;
         end loop;
     end loop;
 end $$;
 
 
+-- TODO: insert into predmet_student

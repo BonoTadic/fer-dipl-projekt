@@ -140,6 +140,20 @@ h1 {
     margin-bottom: 20px;
 }
 
+select {
+    width: 100%;
+    padding: 10px;
+    font-size: 1.1em;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+option {
+    font-size: 1.1em;
+}
+
+
 /* Responsive design */
 @media (max-width: 768px) {
     .columns {

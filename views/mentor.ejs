@@ -8,9 +8,9 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
 </head>
-<body>
+<body data-mentor-id="<%= id %>">
 <div class="container">
-    <h1>Welcome, <%= mentorName %></h1>
+    <h1>Current user: <%= name %></h1>
     <div class="student-list-container">
         <h2>Students who selected you:</h2>
         <ul id="student-list">
@@ -18,7 +18,7 @@
                 <p class="empty-note">No students have selected you yet.</p>
             <% } else { %>
                 <% students.forEach(student => { %>
-                    <li><%= student %></li>
+                    <li data-student-id="<%= student.id %>"><%= student.name %></li>
                 <% }); %>
             <% } %>
         </ul>
