@@ -33,7 +33,7 @@ body {
 }
 
 .column {
-    width: 45%;
+    width: 90%;
     height: 400px;
     overflow-y: auto;
     background-color: #fafafa;
@@ -42,6 +42,12 @@ body {
     padding: 15px;
     box-sizing: border-box;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.boundary{
+    width: 100%;
+    height: 100%;
+    padding: 5px;
 }
 
 #selectedMentors {
@@ -151,6 +157,11 @@ select {
 
 option {
     font-size: 1.1em;
+}
+
+/* class "index" in red font to the right of parent */
+.index {
+    margin-left: auto;
 }
 
 

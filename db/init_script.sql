@@ -1,4 +1,4 @@
-Drop schema if exists projekt cascade;
+--drop schema if exists projekt cascade;
 CREATE SCHEMA projekt;
 
 --drop table if exists projekt.mjesto;

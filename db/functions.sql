@@ -1,6 +1,5 @@
-
 --function which gets all students which have this professor as mentor in their odabir table
-drop function if exists get_students_by_mentor;
+--drop function if exists get_students_by_mentor;
 create or replace function get_students_by_mentor(id_profesora int) returns table (
     student_id int,
     ime varchar,
@@ -25,7 +24,7 @@ $$ language plpgsql;
 
 
 --funciton which gets the list off all mentors
-drop function if exists get_mentors;
+--drop function if exists get_mentors;
 create or replace function get_mentors() returns table (
     id int,
     ime varchar,
@@ -44,7 +43,7 @@ end;
 $$ language plpgsql;
 
 --function which gets all mentors which student has in his odabir table
-drop function if exists get_mentors_by_student;
+--drop function if exists get_mentors_by_student;
 create or replace function get_mentors_by_student(id_studenta int) returns table (
     profesor_id int,
     ime varchar,
@@ -66,7 +65,7 @@ end;
 $$ language plpgsql;
 
 --trigger to check if student odabir has no more than 10 mentors selected
-drop function if exists check_mentor_count;
+--drop function if exists check_mentor_count;
 create or replace function check_mentor_count() returns trigger as $$
 begin
     if (select count(*) from projekt.student_odabir where student_id = new.student_id) > 10 then
@@ -76,25 +75,25 @@ begin
 end;
 $$ language plpgsql;
 
-drop trigger if exists check_mentor_count_trigger on projekt.student_odabir;
+--drop trigger if exists check_mentor_count_trigger on projekt.student_odabir;
 create trigger check_mentor_count_trigger
 before insert or update on projekt.student_odabir
 for each row
 execute function check_mentor_count();
 
 --trigger to add mentor_odabir rows when student_odabir row is added rank should be current highest rank + 1
-drop function if exists add_mentor_odabir;
+--drop function if exists add_mentor_odabir;
 create or replace function add_mentor_odabir() returns trigger as $$
 declare
     max_rank int;
 begin
-    select max(rank) into max_rank from projekt.mentor_odabir where profesor_id = new.profesor_id;
+    select COALESCE(max(rank), 0) into max_rank from projekt.mentor_odabir where profesor_id = new.profesor_id;
     insert into projekt.mentor_odabir (student_id, profesor_id, rank, prioritet) values (new.student_id, new.profesor_id, max_rank + 1, false);
     return new;
 end;
 $$ language plpgsql;
 
-drop trigger if exists add_mentor_odabir_trigger on projekt.student_odabir;
+--drop trigger if exists add_mentor_odabir_trigger on projekt.student_odabir;
 create trigger add_mentor_odabir_trigger
 after insert on projekt.student_odabir
 for each row
@@ -102,7 +101,7 @@ execute function add_mentor_odabir();
 
 
 --trigger to delete mentor_odabir rows when student_odabir row is deleted
-drop function if exists delete_mentor_odabir;
+--drop function if exists delete_mentor_odabir;
 create or replace function delete_mentor_odabir() returns trigger as $$
 begin
     delete from projekt.mentor_odabir where student_id = old.student_id and profesor_id = old.profesor_id;
@@ -110,14 +109,14 @@ begin
 end;
 $$ language plpgsql;
 
-drop trigger if exists delete_mentor_odabir_trigger on projekt.student_odabir;
+--drop trigger if exists delete_mentor_odabir_trigger on projekt.student_odabir;
 create trigger delete_mentor_odabir_trigger
 after delete on projekt.student_odabir
 for each row
 execute function delete_mentor_odabir();
 
 --trigger to adjust ranks of all mentor_odabir rows after a row is deleted, aka if we delete rank 3 all of the others which are ranks 4 and above should be subtracted by 1
-drop function if exists adjust_mentor_odabir;
+--drop function if exists adjust_mentor_odabir;
 create or replace function adjust_mentor_odabir() returns trigger as $$
 declare
     rank_to_adjust int;
@@ -131,7 +130,7 @@ end;
 $$ language plpgsql;
 
 --the trigger
-drop trigger if exists adjust_mentor_odabir_trigger on projekt.mentor_odabir;
+--drop trigger if exists adjust_mentor_odabir_trigger on projekt.mentor_odabir;
 create trigger adjust_mentor_odabir_trigger
 after delete on projekt.mentor_odabir
 for each row
@@ -141,7 +140,7 @@ execute function adjust_mentor_odabir();
 
 
 --update function for mentor_odabir it takes a list of all the studetnts and updated ranks
-drop function if exists update_mentor_odabir;
+--drop function if exists update_mentor_odabir;
 create or replace function update_mentor_odabir(id_profesora int, id_studenta int, new_rank int) returns void as $$
 begin
     update projekt.mentor_odabir
@@ -152,7 +151,7 @@ $$ language plpgsql;
 
 
 --update or insert new rows in student_odabir
-drop function if exists update_student_odabir;
+--drop function if exists update_student_odabir;
 create or replace function update_student_odabir(id_studenta int, id_profesora int, new_rank int) returns void as $$
 begin
     if exists (select * from projekt.student_odabir where student_id = id_studenta and profesor_id = id_profesora) then

@@ -1,5 +1,13 @@
 const list = document.getElementById('student-list');
-new Sortable(list, { animation: 150 });
+new Sortable(list, {
+    animation: 150,
+    onEnd: function (evt) {
+        // Update the index of each list item
+        Array.from(list.children).forEach((item, index) => {
+            item.querySelector('.index').textContent = index + 1;
+        });
+    }
+});
 
 document.getElementById('save-button').addEventListener('click', () => {
     const students = Array.from(list.children).map((item, index) => {
@@ -19,6 +27,8 @@ document.getElementById('save-button').addEventListener('click', () => {
     }).then(response => {
         if (response.ok) {
             alert('Student list saved successfully!');
+            //disable button
+            document.getElementById('save-button').disabled = true;
         } else {
             alert('Error saving student list.');
         }

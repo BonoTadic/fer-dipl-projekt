@@ -18,7 +18,7 @@
                 <p class="empty-note">No students have selected you yet.</p>
             <% } else { %>
                 <% students.forEach(student => { %>
-                    <li data-student-id="<%= student.id %>"><%= student.name %></li>
+                    <li data-student-id="<%= student.id %>"><%= student.name %><span class="index"><%= students.indexOf(student) + 1 %></span></li>
                 <% }); %>
             <% } %>
         </ul>

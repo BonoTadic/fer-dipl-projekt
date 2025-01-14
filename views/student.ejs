@@ -12,22 +12,25 @@
     <h1>Current user: <%= name %></h1>
 
     <div class="columns">
-        <div class="column" id="selectedMentors">
+        <div class="boundary">
             <h2>Selected Mentors</h2>
-            <ul id="selectedList" class="list">
-                <% selectedMentors.forEach(function(mentor) { %>
-                    <li data-mentor-id="<%= mentor.id %>"><%= mentor.name %></li>
-                <% }); %>
-            </ul>
+            <div class="column" id="selectedMentors">
+                <ul id="selectedList" class="list">
+                    <% selectedMentors.forEach(function(mentor) { %>
+                        <li data-mentor-id="<%= mentor.id %>"><%= mentor.name %><span class="index"><%= selectedMentors.indexOf(mentor) + 1 %></span></li>
+                    <% }); %>
+                </ul>
+            </div>
         </div>
-
-        <div class="column" id="allMentors">
+        <div class="boundary">
             <h2>All Mentors</h2>
-            <ul id="allList" class="list">
-                <% remainingMentors.forEach(function(mentor) { %>
-                    <li data-mentor-id="<%= mentor.id %>"><%= mentor.name %></li>
-                <% }); %>
-            </ul>
+            <div class="column" id="allMentors">
+                <ul id="allList" class="list">
+                    <% remainingMentors.forEach(function(mentor) { %>
+                        <li data-mentor-id="<%= mentor.id %>"><%= mentor.name %><span class="index"></span></li>
+                    <% }); %>
+                </ul>
+            </div>
         </div>
     </div>
 

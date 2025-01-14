@@ -39,7 +39,7 @@ select
     (random() * 5 + 1)::int
 from generate_series(1, 30) as i;
 
--- Insert rows into student_odabir with proper ranking
+-- Insert rows into student_odabir with proper ranking up to maximum of 10 mentors per student
 do $$
 declare
     student_id int;
@@ -57,43 +57,13 @@ begin
         i := 0;
         foreach mentor_id in array mentor_ids loop
             begin
-                insert into projekt.student_odabir (student_id, mentor_id, rank)
+                insert into projekt.student_odabir (student_id, profesor_id, rank)
                 values (student_id, mentor_id, i);
                 i := i + 1;
             exception when others then
                 -- Skip if there's a conflict (e.g., unique constraint or trigger)
                 continue;
             end;
-        end loop;
-    end loop;
-end $$;
-
-select * from projekt.student_odabir
-
-
--- Populate mentor_odabir with adjusted ranks based on student_odabir
-do $$
-declare
-    mentor_id int;
-    student_rank_rows record;
-    student_rank int;
-begin
-    -- Loop through each mentor
-    for mentor_id in select id from projekt.profesor loop
-        -- Retrieve all students who ranked this mentor, ordered by their rank in student_odabir
-        student_rank := 0; -- Reset rank for this mentor
-        for student_rank_rows in
-            select student_id, rank
-            from projekt.student_odabir
-            where profesor_id = mentor_id
-            order by rank asc -- Students who ranked mentor higher are processed first
-        loop
-            -- Insert into mentor_odabir with adjusted rank
-            insert into projekt.mentor_odabir (student_id, profesor_id, rank, prioritet)
-            values (student_rank_rows.student_id, mentor_id, student_rank, false);
-            
-            -- Increment the mentor's rank for the next student
-            student_rank := student_rank + 1;
         end loop;
     end loop;
 end $$;
