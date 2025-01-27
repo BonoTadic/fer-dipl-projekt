@@ -1,26 +1,21 @@
 --function which gets all students which have this professor as mentor in their odabir table
 --drop function if exists get_students_by_mentor;
-create or replace function get_students_by_mentor(id_profesora int) returns table (
-    student_id int,
-    ime varchar,
-    prezime varchar,
-    datum_rodjenja date,
-    mjesto_rodjenja_pbr int,
-    adresa varchar,
-    broj_telefona varchar,
-    email varchar,
-    spol varchar,
-    jmbag varchar,
-    rank int
-) as $$
+-- DROP FUNCTION projekt.get_students_by_mentor(int4);
+
+CREATE OR REPLACE FUNCTION projekt.get_students_by_mentor(id_profesora integer)
+ RETURNS TABLE(student_id integer, ime character varying, prezime character varying, datum_rodjenja date, mjesto_rodjenja_pbr integer, adresa character varying, broj_telefona character varying, email character varying, spol character varying, jmbag character varying, rank integer)
+ LANGUAGE plpgsql
+AS $function$
 begin
     return query
     select s.id, s.ime, s.prezime, s.datum_rodjenja, s.mjesto_rodjenja_pbr, s.adresa, s.broj_telefona, s.email, s.spol, s.jmbag, mo.rank
     from projekt.student s
     join projekt.mentor_odabir mo on s.id = mo.student_id
-    where mo.profesor_id = id_profesora;
+    where mo.profesor_id = id_profesora
+	order by mo.rank asc;
 end;
-$$ language plpgsql;
+$function$
+;
 
 
 --funciton which gets the list off all mentors
@@ -43,26 +38,23 @@ end;
 $$ language plpgsql;
 
 --function which gets all mentors which student has in his odabir table
---drop function if exists get_mentors_by_student;
-create or replace function get_mentors_by_student(id_studenta int) returns table (
-    profesor_id int,
-    ime varchar,
-    prezime varchar,
-    datum_rodjenja date,
-    mjesto_rodjenja_pbr int,
-    adresa varchar,
-    broj_telefona varchar,
-    email varchar,
-    rank int
-) as $$
+-- DROP FUNCTION projekt.get_mentors_by_student(int4);
+
+CREATE OR REPLACE FUNCTION projekt.get_mentors_by_student(id_studenta integer)
+ RETURNS TABLE(profesor_id integer, ime character varying, prezime character varying, datum_rodjenja date, mjesto_rodjenja_pbr integer, adresa character varying, broj_telefona character varying, email character varying, rank integer)
+ LANGUAGE plpgsql
+AS $function$
 begin
     return query
     select p.id, p.ime, p.prezime, p.datum_rodjenja, p.mjesto_rodjenja_pbr, p.adresa, p.broj_telefona, p.email, so.rank
     from projekt.profesor p
     join projekt.student_odabir so on p.id = so.profesor_id
-    where so.student_id = id_studenta;
+    where so.student_id = id_studenta
+	order by so.rank asc;
 end;
-$$ language plpgsql;
+$function$
+;
+
 
 --trigger to check if student odabir has no more than 10 mentors selected
 --drop function if exists check_mentor_count;
@@ -161,5 +153,20 @@ begin
     else
         insert into projekt.student_odabir (student_id, profesor_id, rank) values (id_studenta, id_profesora, new_rank);
     end if;
+end;
+$$ language plpgsql;
+
+
+
+--funciton which gets all subjects that a specific mentor has selected
+--DROP FUNCTION projekt.get_subjects_by_mentor(int4);
+create or replace function projekt.get_subjects_by_mentor(id_profesora integer)
+    returns table (predmet_id integer, naziv varchar) as $$
+begin
+    return query
+    select pp.predmet_id, p.naziv
+    from projekt.profesor_predmet pp
+    join projekt.predmet p on pp.predmet_id = p.id
+    where pp.profesor_id = id_profesora;
 end;
 $$ language plpgsql;

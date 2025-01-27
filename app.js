@@ -10,7 +10,7 @@ const port = 3000;
 const { Client } = require('pg');
 const client = new Client({
   user: 'postgres',
-  host: '172.17.176.1',
+  host: 'localhost',
   database: 'projekt',
   password: 'Tomi1234',
   port: 5432,  
@@ -245,6 +245,65 @@ app.post('/student/save', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
+app.get('/api/subjects', async (req, res) => {
+  const searchQuery = req.query.search || '';
+  try{
+    const result = await client.query(
+      'SELECT id, naziv AS name FROM projekt.predmet WHERE LOWER(naziv) LIKE LOWER($1) LIMIT 10',
+      [`%${searchQuery}%`]
+    );
+    res.json(result.rows);
+  } catch {
+    console.error('Error fetching subjects:', error);
+    res.status(500).send('Internal Server Error');
+  }
+}
+);
+
+app.post('/mentor/save-subjects', async (req, res) => {
+  const { mentorId, selectedSubjects } = req.body;
+
+  if (!mentorId || !selectedSubjects) {
+    return res.status(400).send('Missing data');
+  }
+
+  try {
+    // Remove existing preferred subjects for this mentor
+    await client.query('DELETE FROM projekt.profesor_predmet WHERE profesor_id = $1', [mentorId]);
+
+    // Insert new preferred subjects
+    for (const subjectId of selectedSubjects) {
+      await client.query('INSERT INTO projekt.profesor_predmet (profesor_id, predmet_id) VALUES ($1, $2)', [
+        mentorId,
+        subjectId,
+      ]);
+    }
+
+    res.status(200).send('Subjects saved successfully!');
+  } catch (error) {
+    console.error('Error saving subjects:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.get('/api/selected-subjects/:mentorId', async (req, res) => {
+  const { mentorId } = req.params;
+
+  try {
+    const result = await client.query('SELECT predmet_id, naziv FROM projekt.get_subjects_by_mentor($1)', [mentorId]);
+    const selectedSubjects = result.rows.map(subject => ({
+      id: subject.predmet_id, // Ensure this matches your DB schema
+      name: subject.naziv, // Ensure this matches your DB schema
+    }));
+    res.json(selectedSubjects);
+  } catch (err) {
+    console.error('Error fetching selected subjects:', err);
+    res.status(500).json({ error: 'Failed to fetch selected subjects' });
+  }
+});
+
+
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);

@@ -45,7 +45,7 @@ create table projekt.predmet_student(
 );
 
 alter TABLE projekt.predmet_student add constraint ocjena_enum check (ocjena in (1, 2, 3, 4, 5));
-alter table projekt.predmet_student add constraint status_enum check (upis in ('obavljen', 'neupisan', 'upisan'));
+alter table projekt.predmet_student add constraint status_enum check (upis in ('obavljen', 'upisan'));
 
 -- drop table if exists projekt.profesor;
 create table projekt.profesor (
@@ -87,3 +87,12 @@ create table projekt.student_odabir (
 
 -- check if rank is >= 0
 alter table projekt.student_odabir add constraint rank_enum check (rank >= 0);
+
+-- drop table if  exists projekt.profesor_predmet;
+create table projekt.profesor_predmet (
+    profesor_id int not null,
+    predmet_id int not null,
+    primary key (profesor_id, predmet_id),
+    foreign key (profesor_id) references projekt.profesor(id),
+    foreign key (predmet_id) references projekt.predmet(id)
+);
