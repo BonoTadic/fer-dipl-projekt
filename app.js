@@ -308,3 +308,33 @@ app.get('/api/selected-subjects/:mentorId', async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
+
+app.get('/api/get-kapacitet/:mentorId', async (req, res) => {
+  const { mentorId } = req.params;
+
+  try {
+    const result = await client.query('SELECT * FROM projekt.get_kapacitet($1)', [mentorId]);
+    const kapacitet = result.rows[0].get_kapacitet;
+    console.log (kapacitet);
+    res.json({ kapacitet });
+  } catch (error) {
+    console.error('Error fetching kapacitet:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.post('/api/set-kapacitet', async (req, res) => {
+  const { mentorId, kapacitet } = req.body;
+
+  if (!mentorId || !kapacitet) {
+    return res.status(400).send('Missing data');
+  }
+
+  try {
+    await client.query('SELECT * FROM projekt.set_kapacitet($1, $2)', [mentorId, kapacitet]);
+    res.status(200).send('Kapacitet saved successfully!');
+  } catch (error) {
+    console.error('Error saving kapacitet:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});

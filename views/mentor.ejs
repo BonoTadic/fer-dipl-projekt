@@ -12,12 +12,18 @@
 <div class="container">
     <h1>Current user: <%= name %></h1>
     
+    <div class="kapacitet-container">
+        <label for="kapacitet-input">Kapacitet:</label>
+        <input id="kapacitet-input" type="number" min="0" value="0" />
+        <button id="save-kapacitet" disabled>Save Capacity</button>
+    </div>
+    
 
     <div class="subject-container">
         <label for="subject-select">Select Preferred Subjects:</label>
         <select id="subject-select" multiple></select>
     </div>
-    <button id="save-subjects">Save Subjects</button>
+    <button id="save-subjects" disabled>Save Subjects</button>
          
 
     <div class="student-list-container">
