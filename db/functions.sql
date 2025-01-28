@@ -170,3 +170,20 @@ begin
     where pp.profesor_id = id_profesora;
 end;
 $$ language plpgsql;
+
+--get kapacitet
+create or replace function projekt.get_kapacitet(id_in integer) returns integer as $$
+declare
+    kapacitet_out integer;
+begin
+    select kapacitet into kapacitet_out from projekt.profesor where id = $1;
+    return kapacitet_out;
+end;
+$$ language plpgsql;
+
+--set kapacitet
+create or replace function projekt.set_kapacitet(id_in integer, kapacitet_in integer) returns void as $$
+begin
+    update projekt.profesor set kapacitet = $2 where id = $1;
+end;
+$$ language plpgsql;
