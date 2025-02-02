@@ -1,5 +1,3 @@
-
-
 // Load the Sortable library
 const list = document.getElementById('student-list');
 const saveStudentButton = document.getElementById('save-button');

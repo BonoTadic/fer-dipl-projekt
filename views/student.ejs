@@ -11,30 +11,34 @@
 <div class="container">
     <h1>Current user: <%= name %></h1>
 
-    <div class="columns">
-        <div class="boundary">
-            <h2>Selected Mentors</h2>
-            <div class="column" id="selectedMentors">
-                <ul id="selectedList" class="list">
-                    <% selectedMentors.forEach(function(mentor) { %>
-                        <li data-mentor-id="<%= mentor.id %>"><%= mentor.name %><span class="index"><%= selectedMentors.indexOf(mentor) + 1 %></span></li>
-                    <% }); %>
-                </ul>
+    <% if (assignedMentor) { %>
+        <h2>You have been assigned to mentor: <%= assignedMentor %></h2>
+    <% } else { %>
+        <div class="columns">
+            <div class="boundary">
+                <h2>Selected Mentors</h2>
+                <div class="column" id="selectedMentors">
+                    <ul id="selectedList" class="list">
+                        <% selectedMentors.forEach(function(mentor) { %>
+                            <li data-mentor-id="<%= mentor.id %>"><%= mentor.name %><span class="index"><%= selectedMentors.indexOf(mentor) + 1 %></span></li>
+                        <% }); %>
+                    </ul>
+                </div>
+            </div>
+            <div class="boundary">
+                <h2>All Mentors</h2>
+                <div class="column" id="allMentors">
+                    <ul id="allList" class="list">
+                        <% remainingMentors.forEach(function(mentor) { %>
+                            <li data-mentor-id="<%= mentor.id %>"><%= mentor.name %><span class="index"></span></li>
+                        <% }); %>
+                    </ul>
+                </div>
             </div>
         </div>
-        <div class="boundary">
-            <h2>All Mentors</h2>
-            <div class="column" id="allMentors">
-                <ul id="allList" class="list">
-                    <% remainingMentors.forEach(function(mentor) { %>
-                        <li data-mentor-id="<%= mentor.id %>"><%= mentor.name %><span class="index"></span></li>
-                    <% }); %>
-                </ul>
-            </div>
-        </div>
-    </div>
 
-    <button id="saveBtn" disabled>Save Selected Mentors</button>
+        <button id="saveBtn" disabled>Save Selected Mentors</button>
+    <% } %>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>

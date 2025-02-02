@@ -164,9 +164,6 @@ option {
     margin-left: auto;
 }
 
-
-
-
 /* Responsive design */
 @media (max-width: 768px) {
     .columns {

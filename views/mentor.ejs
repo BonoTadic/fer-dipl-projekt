@@ -11,34 +11,47 @@
 <body data-mentor-id="<%= id %>">
 <div class="container">
     <h1>Current user: <%= name %></h1>
-    
-    <div class="kapacitet-container">
-        <label for="kapacitet-input">Kapacitet:</label>
-        <input id="kapacitet-input" type="number" min="0" value="0" />
-        <button id="save-kapacitet" disabled>Save Capacity</button>
-    </div>
-    
 
-    <div class="subject-container">
-        <label for="subject-select">Select Preferred Subjects:</label>
-        <select id="subject-select" multiple></select>
-    </div>
-    <button id="save-subjects" disabled>Save Subjects</button>
-         
-
-    <div class="student-list-container">
-        <h2>Students who selected you:</h2>
-        <ul id="student-list">
-            <% if (students.length === 0) { %>
-                <p class="empty-note">No students have selected you yet.</p>
-            <% } else { %>
-                <% students.forEach(student => { %>
-                    <li data-student-id="<%= student.id %>"><%= student.name %><span class="index"><%= students.indexOf(student) + 1 %></span></li>
+    <% if (mentorFound) { %>
+        <!-- Show only the assigned students if mentor is found in result.txt -->
+        <div class="assigned-students-container">
+            <h2>Assigned Students:</h2>
+            <ul id="assigned-student-list">
+                <% assignedStudents.forEach(student => { %>
+                    <li><%= student.name %></li>
                 <% }); %>
-            <% } %>
-        </ul>
-    </div>
-    <button id="save-button" <%= students.length === 0 ? 'disabled' : '' %>>Save List</button>
+            </ul>
+        </div>
+    <% } else { %>
+        <!-- Show the rest of the content if no assigned students yet -->
+        <div class="kapacitet-container">
+            <label for="kapacitet-input">Kapacitet:</label>
+            <input id="kapacitet-input" type="number" min="0" value="0" />
+            <button id="save-kapacitet" disabled>Save Capacity</button>
+        </div>
+
+        <div class="subject-container">
+            <label for="subject-select">Select Preferred Subjects:</label>
+            <select id="subject-select" multiple></select>
+        </div>
+        <button id="save-subjects" disabled>Save Subjects</button>
+
+        <div class="student-list-container">
+            <h2>Students who selected you:</h2>
+            <ul id="student-list">
+                <% if (students.length === 0) { %>
+                    <p class="empty-note">No students have selected you yet.</p>
+                <% } else { %>
+                    <% students.forEach(student => { %>
+                        <li data-student-id="<%= student.id %>"><%= student.name %><span class="index"><%= students.indexOf(student) + 1 %></span></li>
+                    <% }); %>
+                <% } %>
+            </ul>
+        </div>
+
+        <button id="save-button" <%= students.length === 0 ? 'disabled' : '' %>>Save List</button>
+    <% } %>
+
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js"></script>
