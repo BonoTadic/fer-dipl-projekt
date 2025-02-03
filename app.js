@@ -12,8 +12,8 @@ const client = new Client({
   user: 'postgres',
   host: 'localhost',
   database: 'projekt',
-  password: 'Tomi1234',
-  port: 5432,  
+  password: 'admin',
+  port: 5432,
 });
 
 client.connect(function(err) {
@@ -114,75 +114,199 @@ app.post('/set-user', async (req, res) => {
 
 app.get('/student', async (req, res) => {
   const user = req.session.user;
-  console.log(user);
-  if (!user.id || user.role !== 'student') {
+  if (!user.name || user.role !== 'student') {
     return res.status(403).send('Access denied');
   }
 
   let selectedMentors = [];
+  let assignedMentor = null;
 
   try {
-    // Fetch all mentors
+    const studentIdMatch = user.name.match(/(\d+)\s*$/);
+    if (!studentIdMatch) {
+      console.error("Could not extract student ID from name:", user.name);
+      return res.status(400).send("Invalid student format");
+    }
+    const studentId = studentIdMatch[1].trim();
+
+    console.log("Extracted student ID:", studentId);
+
+    // Read result.txt to find assigned mentor
+    const filePath = path.join(__dirname, 'data/result/result.txt');
+
+    if (fs.existsSync(filePath)) {
+      const fileData = fs.readFileSync(filePath, 'utf8');
+      const lines = fileData.split('\n');
+
+      for (const line of lines) {
+        // Normalize spaces and extract student-mentor pair
+        const match = line.trim().match(/^s(\d+)\s*->\s*m(\d+)$/);
+        if (match) {
+          const fileStudentId = match[1].trim();
+          const fileMentorId = match[2].trim();
+
+          if (fileStudentId === studentId) {
+            assignedMentor = `m${fileMentorId}`;
+            console.log(`Found assigned mentor: ${assignedMentor} for student ${studentId}`);
+            break;
+          }
+        }
+      }
+    }
+
+    // If a mentor was found, return early
+    if (assignedMentor) {
+      return res.render('student', { id: studentId, name: user.name, assignedMentor });
+    }
+
+    // Fetch all mentors from DB
     const queryResults = await client.query('SELECT * FROM projekt.profesor');
-    const mentors = queryResults.rows.map(mentor => {
-      return {
-        id: mentor.id,
-        name: `${mentor.ime} ${mentor.prezime}`,
-      };
-    });
+    const mentors = queryResults.rows.map(mentor => ({
+      id: mentor.id,
+      name: `${mentor.ime} ${mentor.prezime}`,
+    }));
 
     // Fetch mentors selected by the student
-    const queryResults2 = await client.query('SELECT * FROM projekt.get_mentors_by_student($1)', [user.id]);
-    
-    // Unpack rows properly
-    selectedMentors = queryResults2.rows.map(mentor => {
-      return {
-        id: mentor.profesor_id, // Ensure this matches the column names returned by your function
-        name: `${mentor.ime} ${mentor.prezime}`,
-        rank: mentor.rank
-      };
-    });
+    const queryResults2 = await client.query('SELECT * FROM projekt.get_mentors_by_student($1)', [studentId]);
 
-    // Filter out selected mentors from the list of all mentors
+    selectedMentors = queryResults2.rows.map(mentor => ({
+      id: mentor.profesor_id,
+      name: `${mentor.ime} ${mentor.prezime}`,
+      rank: mentor.rank
+    }));
+
+    // Remove selected mentors from full list
     const remainingMentors = mentors.filter(mentor =>
-      !selectedMentors.some(selected => selected.id === mentor.id)
+        !selectedMentors.some(selected => selected.id === mentor.id)
     );
 
-    
-
-    res.render('student', { id: user.id, selectedMentors, remainingMentors, name: user.name });
+    res.render('student', { id: studentId, selectedMentors, remainingMentors, name: user.name, assignedMentor: null });
   } catch (error) {
     console.error('Error fetching mentors:', error);
     res.status(500).send('Internal Server Error');
   }
 });
 
-
 app.get('/mentor', async (req, res) => {
   const user = req.session.user;
-  if (!user.id || user.role !== 'mentor') {
+  if (!user.name || user.role !== 'mentor') {
     return res.status(403).send('Access denied');
   }
 
-  
   let students = [];
-  try {
-    const queryResults = await client.query('SELECT * FROM projekt.get_students_by_mentor($1)', [user.id]);
+  let assignedStudents = [];
+  let mentorFound = false;
 
-    students = queryResults.rows.map(student => {
-      return {
+  try {
+    // Extract numeric mentor ID from `user.name`
+    const mentorIdMatch = user.name.match(/(\d+)\s*$/);
+    if (!mentorIdMatch) {
+      console.error("Could not extract mentor ID from name:", user.name);
+      return res.status(400).send("Invalid mentor format");
+    }
+    const mentorId = mentorIdMatch[1].trim();
+
+    console.log("Extracted mentor ID:", mentorId);
+
+    const filePath = path.join(__dirname, 'data/result/result.txt');
+
+    if (fs.existsSync(filePath)) {
+      const fileData = fs.readFileSync(filePath, 'utf8');
+      const lines = fileData.split('\n');
+
+      for (const line of lines) {
+        // Normalize spaces and extract student-mentor pair
+        const match = line.trim().match(/^s(\d+)\s*->\s*m(\d+)$/);
+        if (match) {
+          const studentId = match[1].trim();
+          const fileMentorId = match[2].trim();
+
+          if (fileMentorId === mentorId) {
+            assignedStudents.push({
+              id: studentId,
+              name: `StudentIme${studentId} StudentPrezime${studentId}` // For demonstration, adjust as needed
+            });
+            mentorFound = true; // Mentor found in result.txt
+          }
+        }
+      }
+    }
+
+    console.log(`Assigned students for mentor ${mentorId}:`, assignedStudents);
+
+    // If mentor is not found in result.txt, show students who selected the mentor
+    if (!mentorFound) {
+      const queryResults = await client.query('SELECT * FROM projekt.get_students_by_mentor($1)', [mentorId]);
+
+      students = queryResults.rows.map(student => ({
         id: student.student_id,
         name: `${student.ime} ${student.prezime}`,
         rank: student.rank
-      };
-    });
-    console.log(students);
-    res.render('mentor', { id: user.id, students, name: user.name });
+      }));
+    }
+
+    res.render('mentor', { id: mentorId, students, name: user.name, assignedStudents, mentorFound });
   } catch (error) {
     console.error('Error fetching students:', error);
     res.status(500).send('Internal Server Error');
   }
 });
+
+
+
+// app.get('/mentor', async (req, res) => {
+//   const user = req.session.user;
+//   if (!user.id || user.role !== 'mentor') {
+//     return res.status(403).send('Access denied');
+//   }
+//
+//
+//   let students = [];
+//   try {
+//     const queryResults = await client.query('SELECT * FROM projekt.get_students_by_mentor($1)', [user.id]);
+//
+//     students = queryResults.rows.map(student => {
+//       return {
+//         id: student.student_id,
+//         name: `${student.ime} ${student.prezime}`,
+//         rank: student.rank
+//       };
+//     });
+//     console.log(students);
+//     res.render('mentor', { id: user.id, students, name: user.name });
+//   } catch (error) {
+//     console.error('Error fetching students:', error);
+//     res.status(500).send('Internal Server Error');
+//   }
+// });
+
+
+
+// app.get('/mentor', async (req, res) => {
+//   const user = req.session.user;
+//   if (!user.id || user.role !== 'mentor') {
+//     return res.status(403).send('Access denied');
+//   }
+//
+//
+//   let students = [];
+//   try {
+//     const queryResults = await client.query('SELECT * FROM projekt.get_students_by_mentor($1)', [user.id]);
+//
+//     students = queryResults.rows.map(student => {
+//       return {
+//         id: student.student_id,
+//         name: `${student.ime} ${student.prezime}`,
+//         rank: student.rank
+//       };
+//     });
+//     console.log(students);
+//     res.render('mentor', { id: user.id, students, name: user.name });
+//   } catch (error) {
+//     console.error('Error fetching students:', error);
+//     res.status(500).send('Internal Server Error');
+//   }
+// });
 
 app.post('/mentor/save', async (req, res) => {
   const { students, id } = req.body;
@@ -219,7 +343,7 @@ app.post('/student/save', async (req, res) => {
 
   const studentId = id;
 
-  
+
 
   try {
     // Fetch current mentors from the student_odabir table
