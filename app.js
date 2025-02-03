@@ -184,26 +184,30 @@ app.get('/mentor', async (req, res) => {
   }
 });
 
-app.post('/mentor/save', (req, res) => {
+app.post('/mentor/save', async (req, res) => {
   const { students, id } = req.body;
 
   if (!students || !id) {
     return res.status(400).send('Missing data');
   }
 
-  const mentorId = id;
-  students.forEach(student => {
-    const studentId = student.id;
-    const rank = student.rank;
-    try {
-      client.query('SELECT * FROM projekt.update_mentor_odabir($1, $2, $3)', [mentorId, studentId, rank]);
+  try {
+    await client.query('BEGIN'); // Start transaction
+
+    for (const student of students) {
+        await client.query(
+            'SELECT * FROM projekt.update_mentor_odabir($1, $2, $3)',
+            [id, student.id, student.rank]
+        );
     }
-    catch (error) {
-      console.error('Error saving ranks:', error);
-      res.status(500).send('Internal Server Error');
-    }
-  });
-  res.status(200).send('Data saved successfully!');
+
+    await client.query('COMMIT'); // Commit transaction
+    res.status(200).send('Data saved successfully!');
+} catch (error) {
+    await client.query('ROLLBACK'); // Rollback on error
+    console.error('Error saving ranks:', error);
+    res.status(500).send('Internal Server Error');
+}
 });
 
 app.post('/student/save', async (req, res) => {
@@ -293,8 +297,8 @@ app.get('/api/selected-subjects/:mentorId', async (req, res) => {
   try {
     const result = await client.query('SELECT predmet_id, naziv FROM projekt.get_subjects_by_mentor($1)', [mentorId]);
     const selectedSubjects = result.rows.map(subject => ({
-      id: subject.predmet_id, // Ensure this matches your DB schema
-      name: subject.naziv, // Ensure this matches your DB schema
+      id: subject.predmet_id, 
+      name: subject.naziv, 
     }));
     res.json(selectedSubjects);
   } catch (err) {

@@ -17,7 +17,6 @@
         <input id="kapacitet-input" type="number" min="0" value="0" />
         <button id="save-kapacitet" disabled>Save Capacity</button>
     </div>
-    
 
     <div class="subject-container">
         <label for="subject-select">Select Preferred Subjects:</label>
@@ -25,7 +24,6 @@
     </div>
     <button id="save-subjects" disabled>Save Subjects</button>
          
-
     <div class="student-list-container">
         <h2>Students who selected you:</h2>
         <ul id="student-list">
@@ -33,13 +31,27 @@
                 <p class="empty-note">No students have selected you yet.</p>
             <% } else { %>
                 <% students.forEach(student => { %>
-                    <li data-student-id="<%= student.id %>"><%= student.name %><span class="index"><%= students.indexOf(student) + 1 %></span></li>
+                    <li class="student-item" 
+                        data-student-id="<%= student.id %>" 
+                        data-rank="<%= student.rank %>" 
+                        <% if (student.groupId) { %> 
+                            data-group-id="<%= student.groupId %>" 
+                        <% } %> 
+                    >
+                        <span class="index"><%= student.rank %></span>
+                        <span class="name"><%= student.name %></span>
+                        <button class="group-btn">Group</button>
+                        <% if (student.groupId) { %>
+                            <button class="ungroup-btn">Ungroup</button>
+                        <% } %>
+                    </li>
                 <% }); %>
             <% } %>
         </ul>
     </div>
     <button id="save-button" <%= students.length === 0 ? 'disabled' : '' %>>Save List</button>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
